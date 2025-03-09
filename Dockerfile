@@ -1,13 +1,10 @@
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
-# Set up the environment
-RUN apt update && apt install -y python3 python3-pip git
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-RUN pip3 install -r requirements.txt
+# Set working directory
+WORKDIR /workspace
 
-# Copy the project files
-WORKDIR /app
-COPY . /app
+# Install additional dependencies
+RUN pip install numpy tqdm tiktoken datasets
 
-# Define entrypoint for training
-CMD ["python3", "train_model.py"]
+# Copy project files
+COPY . /workspace
