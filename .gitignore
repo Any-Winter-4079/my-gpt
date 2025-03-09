@@ -1,0 +1,17 @@
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore data directory (to avoid large files)
+data/
+
+# Ignore Repomix-specific files
+.repomixignore
+repomix-output.txt
+
+# Ignore Docker build files (if needed)
+*.log
+*.out
+*.err
+*.npy  # Ignore large numpy files unless needed
