@@ -107,9 +107,18 @@ def train():
         input_ids = batch[:, :-1]
         target_ids = batch[:, 1:]
         
-        logits = model(input_ids)
-        loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
-        
+        # if device.type == "cuda":
+        #     with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+        #         logits = model(input_ids)
+        #         loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
+        # else:
+        #     logits = model(input_ids)
+        #     loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
+
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+            logits = model(input_ids)
+            loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
+
         loss.backward()
         optimizer.step()
         scheduler.step()
