@@ -91,6 +91,9 @@ def train():
         dropout=CONFIG["dropout"],
     ).to(device)
 
+    if device.type == "cuda":
+        model = torch.compile(model)
+
     dataloader = load_data_from_disk(CONFIG["data_dir"], CONFIG["batch_size"], CONFIG["max_seq_len"])
     optimizer = get_optimizer(model, CONFIG["lr"], CONFIG["betas"])
     scheduler = get_lr_scheduler(optimizer, CONFIG["warmup_steps"], CONFIG["total_steps"])
