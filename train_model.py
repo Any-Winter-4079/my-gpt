@@ -77,6 +77,10 @@ def get_optimizer(model, lr, betas):
 # Initialize model
 def train():
     device = CONFIG["device"]
+    
+    if device.type == "cuda":
+        torch.set_float32_matmul_precision('high')
+
     model = GPT(
         vocab_size=CONFIG["vocab_size"],
         embed_dim=CONFIG["embed_dim"],
