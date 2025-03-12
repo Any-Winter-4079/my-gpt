@@ -56,9 +56,8 @@ def get_lr_scheduler(optimizer, warmup_steps, total_steps, min_lr_ratio):
     def lr_lambda(step):
         if step < warmup_steps:
             return (step+1) / warmup_steps  # Linear warmup
-        min_lr = min_lr_ratio  # Prevent LR from going below min_lr_ratio * initial_lr
         cosine_decay = 0.5 * (1 + math.cos(math.pi * (step - warmup_steps) / (total_steps - warmup_steps)))
-        return max(min_lr, cosine_decay)
+        return max(min_lr_ratio, cosine_decay)
 
     return LambdaLR(optimizer, lr_lambda)
 
@@ -143,7 +142,7 @@ def train():
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.6f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
+            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.8f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
             start_time = time.time()
             tokens_processed = 0
         
