@@ -20,12 +20,13 @@ CONFIG = {
     "max_seq_len": 1024,
     "dropout": 0.1,
     "batch_size": 8,
-    "lr": 3e-4,
+    "lr": 6e-4,
+    "min_lr_ratio": 0.1,
     "warmup_steps": 1000,
     "total_steps": 50000,
     "betas": (0.9, 0.95),
     "device": get_device(),
-    "data_dir": "./data",  # Directory where .npy tokenized files are stored
+    "data_dir": "./data",
 }
 
 # Iterable Dataset for streaming from disk
@@ -37,7 +38,7 @@ class NPZIterableDataset(IterableDataset):
     
     def __iter__(self):
         for file in self.files:
-            tokens = np.load(file).astype(np.int64)  # Convert uint16 to int64 for PyTorch compatibility
+            tokens = np.load(file).astype(np.int64)
             num_samples = len(tokens) - self.seq_len
             for i in range(0, num_samples, self.batch_size):
                 batch = np.array([tokens[j : j + self.seq_len] for j in range(i, min(i + self.batch_size, num_samples))], dtype=np.int64)
@@ -50,11 +51,14 @@ def load_data_from_disk(data_dir, batch_size, seq_len):
     return dataloader
 
 # Learning rate schedule with warmup and cosine decay
-def get_lr_scheduler(optimizer, warmup_steps, total_steps):
+def get_lr_scheduler(optimizer, warmup_steps, total_steps, min_lr_ratio):
     def lr_lambda(step):
         if step < warmup_steps:
-            return step / warmup_steps
-        return 0.5 * (1 + math.cos(math.pi * (step - warmup_steps) / (total_steps - warmup_steps)))
+            return (step+1) / warmup_steps  # Linear warmup
+        min_lr = min_lr_ratio  # Prevent LR from going below min_lr_ratio * initial_lr
+        cosine_decay = 0.5 * (1 + math.cos(math.pi * (step - warmup_steps) / (total_steps - warmup_steps)))
+        return max(min_lr, cosine_decay)
+
     return LambdaLR(optimizer, lr_lambda)
 
 # Exclude LayerNorm and bias parameters from weight decay
@@ -64,7 +68,7 @@ def get_optimizer(model, lr, betas):
     
     for name, param in model.named_parameters():
         if param.dim() == 1 or "ln" in name:
-            no_decay_params.append(param)  # LayerNorm and biases
+            no_decay_params.append(param)
         else:
             decay_params.append(param)
     
@@ -96,12 +100,13 @@ def train():
 
     dataloader = load_data_from_disk(CONFIG["data_dir"], CONFIG["batch_size"], CONFIG["max_seq_len"])
     optimizer = get_optimizer(model, CONFIG["lr"], CONFIG["betas"])
-    scheduler = get_lr_scheduler(optimizer, CONFIG["warmup_steps"], CONFIG["total_steps"])
+    scheduler = get_lr_scheduler(optimizer, CONFIG["warmup_steps"], CONFIG["total_steps"], CONFIG["min_lr_ratio"])
     loss_fn = nn.CrossEntropyLoss()
     
     step = 0
     model.train()
     start_time = time.time()
+    tokens_processed = 0
     
     for batch in dataloader:
         optimizer.zero_grad()
@@ -109,15 +114,12 @@ def train():
         batch = batch.to(device)
         input_ids = batch[:, :-1]
         target_ids = batch[:, 1:]
-        
-        # if device.type == "cuda":
-        #     with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
-        #         logits = model(input_ids)
-        #         loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
-        # else:
-        #     logits = model(input_ids)
-        #     loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
 
+        # mps
+        # logits = model(input_ids)
+        # loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
+        
+        # cuda
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
             logits = model(input_ids)
             loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
@@ -127,6 +129,7 @@ def train():
         scheduler.step()
         
         step += 1
+        tokens_processed += batch.numel()
         
         if step % 10 == 0:
             if device.type == "cuda":
@@ -135,8 +138,10 @@ def train():
                 torch.mps.synchronize()
             
             elapsed_time = time.time() - start_time
-            print(f"Step {step}/{CONFIG['total_steps']}: Loss = {loss.item():.4f}, Time per 10 steps = {elapsed_time:.2f} sec")
+            tokens_per_sec = tokens_processed / elapsed_time
+            print(f"Step {step}/{CONFIG['total_steps']}: Loss = {loss.item():.4f}, Time per 10 steps = {elapsed_time:.2f} sec, Tokens/sec = {tokens_per_sec:.2f}")
             start_time = time.time()
+            tokens_processed = 0
         
         if step >= CONFIG["total_steps"]:
             break
