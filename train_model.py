@@ -23,7 +23,7 @@ CONFIG = {
     "lr": 6e-4,
     "min_lr_ratio": 0.1,
     "warmup_steps": 1000,
-    "total_steps": 50000,
+    "total_steps": 50,
     "betas": (0.9, 0.95),
     "device": get_device(),
     "data_dir": "./data",
