@@ -42,6 +42,7 @@ class GPT(nn.Module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
             std = 0.02
             if isinstance(module, nn.Linear) and hasattr(module, 'RESIDUAL_SCALE_INIT'):
+                print(1)
                 std *= (2 * len(self.blocks)) ** -0.5
             nn.init.normal_(module.weight, mean=0.0, std=std)
         if isinstance(module, nn.Linear) and module.bias is not None:
