@@ -12,7 +12,7 @@ class Block(nn.Module):
     - LayerNorm before each sublayer
     - Residual connections
     """
-    def __init__(self, embed_dim, num_heads, mlp_hidden_dim, num_layers, dropout=0.1):
+    def __init__(self, embed_dim, num_heads, mlp_hidden_dim, dropout=0.1):
         super().__init__()
         
         self.ln1 = nn.LayerNorm(embed_dim)  # LayerNorm before Attention
