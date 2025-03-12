@@ -21,11 +21,11 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(embed_dim)  # LayerNorm before MLP
         self.mlp = MLP(embed_dim, mlp_hidden_dim, dropout=dropout)
     
-    def forward(self, x, mask=None):
+    def forward(self, x):
         """Apply attention and MLP with residual connections"""
         
         # Self-Attention + Residual
-        attn_out = self.attn(self.ln1(x), mask)  # LayerNorm before attention
+        attn_out = self.attn(self.ln1(x))  # LayerNorm before attention
         x = x + attn_out  # Residual connection
         
         # MLP + Residual

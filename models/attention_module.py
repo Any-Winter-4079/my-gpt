@@ -24,7 +24,7 @@ class Attention(nn.Module):
         # Dropout for regularization
         self.dropout = nn.Dropout(dropout)
     
-    def forward(self, x, mask=None):
+    def forward(self, x):
         """Compute self-attention over input sequence x using F.scaled_dot_product_attention"""
         batch_size, seq_len, embed_dim = x.shape
         assert embed_dim == self.embed_dim, "Input embedding dim does not match model"
@@ -34,7 +34,7 @@ class Attention(nn.Module):
         q, k, v = map(lambda t: t.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2), qkv)
         
         # Use PyTorch's optimized scaled_dot_product_attention
-        output = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=self.dropout.p)
+        output = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         
         # Merge heads back
         output = output.transpose(1, 2).reshape(batch_size, seq_len, embed_dim)
