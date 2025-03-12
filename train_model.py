@@ -96,7 +96,7 @@ def train():
     ).to(device)
 
     if device.type == "cuda":
-        model = torch.compile(model)
+        pass
 
     dataloader = load_data_from_disk(CONFIG["data_dir"], CONFIG["batch_size"], CONFIG["max_seq_len"])
     optimizer = get_optimizer(model, CONFIG["lr"], CONFIG["betas"])

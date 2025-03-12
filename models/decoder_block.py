@@ -12,14 +12,14 @@ class Block(nn.Module):
     - LayerNorm before each sublayer
     - Residual connections
     """
-    def __init__(self, embed_dim, num_heads, mlp_hidden_dim, dropout=0.1):
+    def __init__(self, embed_dim, num_heads, up_proj_factor, dropout=0.1):
         super().__init__()
         
         self.ln1 = nn.LayerNorm(embed_dim)  # LayerNorm before Attention
         self.attn = Attention(embed_dim, num_heads, dropout)
         
         self.ln2 = nn.LayerNorm(embed_dim)  # LayerNorm before MLP
-        self.mlp = MLP(embed_dim, mlp_hidden_dim, dropout=dropout)
+        self.mlp = MLP(embed_dim, up_proj_factor, dropout=dropout)
     
     def forward(self, x):
         """Apply attention and MLP with residual connections"""
