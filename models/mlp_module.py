@@ -6,7 +6,7 @@ class MLP(nn.Module):
     """
     Feedforward network module.
     """
-    def __init__(self, embed_dim, hidden_dim, up_proj_factor=4, dropout=0.1):
+    def __init__(self, embed_dim, up_proj_factor=4, dropout=0.1):
         super().__init__()
         expanded_hidden_dim = int(embed_dim * up_proj_factor)  # Scale hidden dim
         
