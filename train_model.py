@@ -20,7 +20,7 @@ CONFIG = {
     "max_seq_len": 1024,
     "dropout": 0.1,
     "batch_size": 32,
-    "lr": 6e-4,
+    "lr": 3e-4,
     "min_lr_ratio": 0.1,
     "warmup_steps": 10,
     "total_steps": 50,
