@@ -6,8 +6,8 @@ import numpy as np
 import torch.nn as nn
 from models.gpt import GPT
 import torch.optim as optim
-from utils import get_device
 from torch.optim.lr_scheduler import LambdaLR
+from utils import get_device, get_default_dtype
 from torch.utils.data import IterableDataset, DataLoader
 
 # Configuration
@@ -120,12 +120,12 @@ def train():
         # loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
         
         # cuda
-        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+        with torch.autocast(device_type=device.type, dtype=get_default_dtype()):
             logits = model(input_ids)
             loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
 
         loss.backward()
-        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), CONFIG["grad_clip"])
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), CONFIG["grad_clip"])
         current_lr = optimizer.param_groups[0]['lr']
         optimizer.step()
         scheduler.step()
@@ -141,7 +141,7 @@ def train():
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step-1}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.8f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
+            print(f"Step {step-1}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.8f}, Grad_norm={grad_norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
             start_time = time.time()
             tokens_processed = 0
         
