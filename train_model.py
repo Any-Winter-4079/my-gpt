@@ -126,6 +126,7 @@ def train():
 
         loss.backward()
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), CONFIG["grad_clip"])
+        current_lr = optimizer.param_groups[0]['lr']
         optimizer.step()
         scheduler.step()
         
@@ -137,8 +138,6 @@ def train():
                 torch.cuda.synchronize()
             elif device.type == "mps" and hasattr(torch, 'mps'):
                 torch.mps.synchronize()
-            
-            current_lr = optimizer.param_groups[0]['lr']
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
