@@ -27,6 +27,7 @@ CONFIG = {
     "betas": (0.9, 0.95),
     "device": get_device(),
     "data_dir": "./data",
+    "grad_clip": 1.0,
 }
 
 # Iterable Dataset for streaming from disk
@@ -125,6 +126,7 @@ def train():
             loss = loss_fn(logits.reshape(-1, CONFIG["vocab_size"]), target_ids.reshape(-1))
 
         loss.backward()
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), CONFIG["grad_clip"])
         optimizer.step()
         scheduler.step()
         
@@ -137,9 +139,11 @@ def train():
             elif device.type == "mps" and hasattr(torch, 'mps'):
                 torch.mps.synchronize()
             
+            current_lr = optimizer.param_groups[0]['lr']
+            
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step}/{CONFIG['total_steps']}: Loss = {loss.item():.4f}, Time per 10 steps = {elapsed_time:.2f} sec, Tokens/sec = {tokens_per_sec:.2f}")
+            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.6f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}")
             start_time = time.time()
             tokens_processed = 0
         
