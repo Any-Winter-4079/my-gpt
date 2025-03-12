@@ -16,7 +16,7 @@ CONFIG = {
     "embed_dim": 768,
     "num_heads": 12,
     "num_layers": 12,
-    "up_proj_factor": 3072,
+    "up_proj_factor": 4,
     "max_seq_len": 1024,
     "dropout": 0.1,
     "batch_size": 8,
