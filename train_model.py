@@ -143,7 +143,7 @@ def train():
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.6f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}")
+            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.6f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time}")
             start_time = time.time()
             tokens_processed = 0
         
