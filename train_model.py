@@ -12,7 +12,7 @@ from torch.utils.data import IterableDataset, DataLoader
 
 # Configuration
 CONFIG = {
-    "vocab_size": 50257,
+    "vocab_size": 50304,
     "embed_dim": 768,
     "num_heads": 12,
     "num_layers": 12,

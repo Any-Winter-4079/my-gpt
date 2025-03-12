@@ -34,7 +34,7 @@ class Attention(nn.Module):
         q, k, v = map(lambda t: t.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2), qkv)
         
         # Use PyTorch's optimized scaled_dot_product_attention
-        output = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=self.dropout)
+        output = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=self.dropout.p)
         
         # Merge heads back
         output = output.transpose(1, 2).reshape(batch_size, seq_len, embed_dim)
