@@ -22,7 +22,7 @@ CONFIG = {
     "batch_size": 32,
     "lr": 6e-4,
     "min_lr_ratio": 0.1,
-    "warmup_steps": 1000,
+    "warmup_steps": 10,
     "total_steps": 50,
     "betas": (0.9, 0.95),
     "device": get_device(),
@@ -141,7 +141,7 @@ def train():
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.8f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
+            print(f"Step {step-1}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.8f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
             start_time = time.time()
             tokens_processed = 0
         
