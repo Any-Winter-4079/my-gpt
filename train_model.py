@@ -133,7 +133,7 @@ def train():
         step += 1
         tokens_processed += batch.numel()
         
-        if step % 10 == 0:
+        if step % 1 == 0:
             if device.type == "cuda":
                 torch.cuda.synchronize()
             elif device.type == "mps" and hasattr(torch, 'mps'):
@@ -143,7 +143,7 @@ def train():
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.6f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time}")
+            print(f"Step {step}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.6f}, Grad_norm={norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
             start_time = time.time()
             tokens_processed = 0
         
