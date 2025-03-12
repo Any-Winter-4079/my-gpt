@@ -24,8 +24,8 @@ class Attention(nn.Module):
         # Dropout for regularization
         self.dropout = nn.Dropout(dropout)
     
-    def forward(self, x):
-        """Compute self-attention over input sequence x using F.scaled_dot_product_attention"""
+    def forward(self, x, mask=None):
+        """Compute self-attention over input sequence x"""
         batch_size, seq_len, embed_dim = x.shape
         assert embed_dim == self.embed_dim, "Input embedding dim does not match model"
         
@@ -33,11 +33,21 @@ class Attention(nn.Module):
         qkv = self.qkv_proj(x).chunk(3, dim=-1)
         q, k, v = map(lambda t: t.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2), qkv)
         
-        # Use PyTorch's optimized scaled_dot_product_attention
-        output = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+        # Compute scaled dot-product attention
+        attn_scores = q @ k.transpose(-2, -1)  # (batch, num_heads, seq_len, seq_len)
         
-        # Merge heads back
-        output = output.transpose(1, 2).reshape(batch_size, seq_len, embed_dim)
+        # Apply causal mask (if provided, e.g., for autoregressive decoding)
+        if mask is not None:
+            attn_scores = attn_scores.masked_fill(mask == 0, float('-inf'))
+        
+        # Convert scores to probabilities
+        attn_probs = F.softmax(attn_scores, dim=-1)
+        attn_probs = self.dropout(attn_probs)  # Apply dropout
+        
+        # Compute attention-weighted values
+        attn_output = (attn_probs @ v).transpose(1, 2).reshape(batch_size, seq_len, embed_dim)
         
         # Final output projection
-        return self.out_proj(output)
+        output = self.out_proj(attn_output)
+        
+        return output
