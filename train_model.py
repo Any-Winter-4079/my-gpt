@@ -16,7 +16,7 @@ CONFIG = {
     "embed_dim": 768,
     "num_heads": 12,
     "num_layers": 12,
-    "mlp_hidden_dim": 3072,
+    "up_proj_factor": 3072,
     "max_seq_len": 1024,
     "dropout": 0.1,
     "batch_size": 4,
@@ -90,13 +90,13 @@ def train():
         embed_dim=CONFIG["embed_dim"],
         num_heads=CONFIG["num_heads"],
         num_layers=CONFIG["num_layers"],
-        mlp_hidden_dim=CONFIG["mlp_hidden_dim"],
+        up_proj_factor=CONFIG["up_proj_factor"],
         max_seq_len=CONFIG["max_seq_len"],
         dropout=CONFIG["dropout"],
     ).to(device)
 
     if device.type == "cuda":
-        pass
+        model = torch.compile(model)
 
     dataloader = load_data_from_disk(CONFIG["data_dir"], CONFIG["batch_size"], CONFIG["max_seq_len"])
     optimizer = get_optimizer(model, CONFIG["lr"], CONFIG["betas"])

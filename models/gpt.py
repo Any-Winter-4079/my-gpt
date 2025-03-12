@@ -10,7 +10,7 @@ class GPT(nn.Module):
     - Final LayerNorm
     - Language modeling head (optionally tied with token embeddings)
     """
-    def __init__(self, vocab_size, embed_dim, num_heads, num_layers, mlp_hidden_dim, max_seq_len, dropout=0.1, tie_weights=True):
+    def __init__(self, vocab_size, embed_dim, num_heads, num_layers, up_proj_factor, max_seq_len, dropout=0.1, tie_weights=True):
         super().__init__()
         
         self.embed_dim = embed_dim
@@ -21,7 +21,7 @@ class GPT(nn.Module):
         
         # Decoder Blocks
         self.blocks = nn.ModuleList([
-            Block(embed_dim, num_heads, mlp_hidden_dim, dropout) for _ in range(num_layers)
+            Block(embed_dim, num_heads, up_proj_factor, dropout) for _ in range(num_layers)
         ])
         
         # Final LayerNorm
