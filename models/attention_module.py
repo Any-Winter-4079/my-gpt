@@ -22,7 +22,7 @@ class Attention(nn.Module):
         self.out_proj.RESIDUAL_SCALE_INIT = 1  # Mark this for weight initialization scaling
         
         # Dropout for regularization
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = dropout
     
     def forward(self, x):
         """Compute self-attention over input sequence x using F.scaled_dot_product_attention"""
@@ -34,8 +34,7 @@ class Attention(nn.Module):
         q, k, v = map(lambda t: t.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2), qkv)
         
         # Use PyTorch's optimized scaled_dot_product_attention
-        print(self.dropout.p)
-        output = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=self.dropout.p)
+        output = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=self.dropout)
         
         # Merge heads back
         output = output.transpose(1, 2).reshape(batch_size, seq_len, embed_dim)
