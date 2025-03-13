@@ -132,6 +132,7 @@ def train():
         
         step += 1
         tokens_processed += batch.numel()
+        print(CONFIG['batch_size']*CONFIG['max_seq_len'], tokens_processed)
         
         if step % 1 == 0:
             if device.type == "cuda":
@@ -141,7 +142,7 @@ def train():
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step-1}/{CONFIG['total_steps']}: Loss={loss.item():.4f}, LR={current_lr:.8f}, Grad_norm={grad_norm:.4f}, TPS={tokens_per_sec:.0f}, Time={elapsed_time:6f}")
+            print(f"Step {step-1}/{CONFIG['total_steps']}: Loss={loss.item():.6f}, LR={current_lr:.8f}, Grad_norm={grad_norm:.4f}, TPS={tokens_per_sec:.2f}, Time={1000*elapsed_time:2f}ms")
             start_time = time.time()
             tokens_processed = 0
         
