@@ -12,9 +12,9 @@ def load_tokenizer():
         tokenizer = tiktoken.get_encoding("gpt2")
         print("Loaded GPT-2 tokenizer from tiktoken")
         return tokenizer
-    except:
+    except Exception as e:
         print("Could not load tokenizer from tiktoken")
-        raise NotImplementedError("Please install the tiktoken library for GPT-2 tokenization")
+        raise NotImplementedError("Please install the tiktoken library for GPT-2 tokenization") from e
 
 # Initialize tokenizer in worker process
 _worker_tokenizer = None
@@ -56,7 +56,7 @@ def prepare_webtext_data_mp(data_dir="./data", shard_size=100_000_000, num_worke
     
     Args:
         data_dir: Directory to save tokenized shards
-        shard_size: Target size for each shard in tokens
+        shard_size: Target size for each shard in tokens (e.g., 100M tokens)
         num_workers: Number of worker processes (default: CPU count - 1)
         batch_size: Number of documents to process in each batch
     
@@ -85,7 +85,7 @@ def prepare_webtext_data_mp(data_dir="./data", shard_size=100_000_000, num_worke
     
     # Initialize variables for sharding
     shard_index = 0
-    shard_tokens = []
+    shard_tokens = []  # Tokens in the current shard
     total_tokens = 0
     
     # Create progress bar for documents
@@ -109,60 +109,61 @@ def prepare_webtext_data_mp(data_dir="./data", shard_size=100_000_000, num_worke
                 # Process each chunk in parallel
                 results = pool.map(partial(tokenize_docs_batch, eot_token=eot_token), doc_chunks)
                 
-                # Flatten the results
+                # Flatten the results: list of token lists (one per document)
                 batch_tokens_list = [tokens for chunk_result in results for tokens in chunk_result]
                 
-                # Add tokens to current shard and check if we need to save
+                # Process each document's tokens
                 for doc_tokens in batch_tokens_list:
-                    # Check if adding these tokens would exceed shard size
-                    if len(shard_tokens) + len(doc_tokens) >= shard_size:
-                        # Determine if this is validation or training data
-                        split = "val" if shard_index == 0 else "train"
-                        filename = os.path.join(data_dir, f"webtext_{split}_{shard_index:06d}")
+                    start_idx = 0
+                    while start_idx < len(doc_tokens):
+                        # Determine how many tokens can fit in the current shard
+                        remaining = shard_size - len(shard_tokens)
+                        tokens_to_take = min(remaining, len(doc_tokens) - start_idx)
                         
-                        # Save current shard using uint16
-                        tokens_np = np.array(shard_tokens, dtype=np.uint16)
-                        np.save(filename, tokens_np)
+                        # Add the tokens to the current shard
+                        shard_tokens.extend(doc_tokens[start_idx:start_idx+tokens_to_take])
+                        token_pbar.update(tokens_to_take)
+                        start_idx += tokens_to_take
                         
-                        # Close progress bar before printing
-                        token_pbar.close()
-                        
-                        # Print with proper newline
-                        print(f"\nSaved {len(tokens_np)} tokens to {filename}.npy\n")
-                        
-                        # Reset for next shard
-                        shard_index += 1
-                        shard_tokens = doc_tokens.copy()  # Start with current document's tokens
-                        total_tokens += len(tokens_np)
-                        
-                        # Create new progress bar for next shard
-                        token_pbar = tqdm(total=shard_size, desc=f"[Shard {shard_index}] Tokens collected", 
-                                         position=1, unit=" tokens")
-                        token_pbar.update(len(doc_tokens))
-                    else:
-                        # Add tokens to current shard
-                        shard_tokens.extend(doc_tokens)
-                        token_pbar.update(len(doc_tokens))
+                        # If the current shard is full, save it and start a new shard
+                        if len(shard_tokens) == shard_size:
+                            split = "val" if shard_index == 0 else "train"
+                            filename = os.path.join(data_dir, f"webtext_{split}_{shard_index:06d}")
+                            
+                            # Save current shard using uint16
+                            tokens_np = np.array(shard_tokens, dtype=np.uint16)
+                            np.save(filename, tokens_np)
+                            
+                            # Close and print progress
+                            token_pbar.close()
+                            print(f"\nSaved {len(tokens_np)} tokens to {filename}.npy\n")
+                            
+                            shard_index += 1
+                            total_tokens += len(tokens_np)
+                            shard_tokens = []  # Reset for the new shard
+                            
+                            # Create new progress bar for the next shard
+                            token_pbar = tqdm(total=shard_size, desc=f"[Shard {shard_index}] Tokens collected", 
+                                              position=1, unit=" tokens")
                 
-                # Update document progress bar for the whole batch
+                # Update the overall document progress bar for the whole batch
                 doc_pbar.update(len(batch))
     
     except KeyboardInterrupt:
         print("\nProcess interrupted by user. Saving current progress...")
     
     finally:
-        # Save any remaining tokens as final shard
+        # Save any remaining tokens as the final shard (may be smaller than shard_size)
         if shard_tokens:
             split = "val" if shard_index == 0 else "train"
             filename = os.path.join(data_dir, f"webtext_{split}_{shard_index:06d}")
             tokens_np = np.array(shard_tokens, dtype=np.uint16)
             np.save(filename, tokens_np)
             
-            # Close progress bars before printing
             try:
                 token_pbar.close()
                 doc_pbar.close()
-            except:
+            except Exception:
                 pass
             
             print(f"\nSaved {len(tokens_np)} tokens to final shard {filename}.npy\n")
@@ -171,7 +172,7 @@ def prepare_webtext_data_mp(data_dir="./data", shard_size=100_000_000, num_worke
             try:
                 token_pbar.close()
                 doc_pbar.close()
-            except:
+            except Exception:
                 pass
         
         print(f"Finished processing dataset. Created {shard_index + 1} shards with {total_tokens} total tokens.")
