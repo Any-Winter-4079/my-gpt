@@ -56,6 +56,8 @@ def get_lr_scheduler(optimizer, warmup_steps, total_steps, min_lr_ratio):
     def lr_lambda(step):
         if step < warmup_steps:
             return (step+1) / warmup_steps  # Linear warmup
+        elif step > total_steps:
+            return min_lr_ratio
         cosine_decay = 0.5 * (1 + math.cos(math.pi * (step - warmup_steps) / (total_steps - warmup_steps)))
         return max(min_lr_ratio, cosine_decay)
 
