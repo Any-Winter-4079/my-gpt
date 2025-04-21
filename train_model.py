@@ -122,6 +122,10 @@ def train():
         optimizer.zero_grad()
         
         batch = batch.to(device)
+        print("Batch first tokens preview:")
+        for i in range(min(3, batch.shape[0])):
+            print(f"  Sample {i}: {batch[i][:10].tolist()}")
+
         input_ids = batch[:, :-1]
         target_ids = batch[:, 1:]
 
