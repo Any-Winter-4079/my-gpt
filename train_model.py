@@ -20,7 +20,8 @@ CONFIG = {
     "max_seq_len": 1024,
     "dropout": 0.1,
     "batch_size": 32,
-    "lr": 3e-4,
+    "lr": 6e-4,
+    "max_lr_ratio": 1.0,
     "min_lr_ratio": 0.1,
     "warmup_steps": 100,
     "total_steps": 5000,
@@ -52,15 +53,14 @@ def load_data_from_disk(data_dir, batch_size, seq_len):
     return dataloader
 
 # Learning rate schedule with warmup and cosine decay
-def get_lr_scheduler(optimizer, warmup_steps, total_steps, min_lr_ratio):
+def get_lr_scheduler(optimizer, warmup_steps, total_steps, min_lr_ratio, max_lr_ratio):
     def lr_lambda(step):
         if step < warmup_steps:
-            return (step+1) / warmup_steps  # Linear warmup
+            return (step + 1) / warmup_steps * max_lr_ratio
         elif step > total_steps:
             return min_lr_ratio
         cosine_decay = 0.5 * (1 + math.cos(math.pi * (step - warmup_steps) / (total_steps - warmup_steps)))
-        return max(min_lr_ratio, cosine_decay)
-
+        return min_lr_ratio + (max_lr_ratio - min_lr_ratio) * cosine_decay
     return LambdaLR(optimizer, lr_lambda)
 
 # Exclude LayerNorm and bias parameters from weight decay
@@ -100,9 +100,17 @@ def train():
     if device.type == "cuda":
         model = torch.compile(model)
 
-    dataloader = load_data_from_disk(CONFIG["data_dir"], CONFIG["batch_size"], CONFIG["max_seq_len"])
-    optimizer = get_optimizer(model, CONFIG["lr"], CONFIG["betas"])
-    scheduler = get_lr_scheduler(optimizer, CONFIG["warmup_steps"], CONFIG["total_steps"], CONFIG["min_lr_ratio"])
+    dataloader = load_data_from_disk(CONFIG["data_dir"],
+                                     CONFIG["batch_size"],
+                                     CONFIG["max_seq_len"])
+    optimizer = get_optimizer(model,
+                              CONFIG["lr"],
+                              CONFIG["betas"])
+    scheduler = get_lr_scheduler(optimizer,
+                                 CONFIG["warmup_steps"],
+                                 CONFIG["total_steps"],
+                                 CONFIG["min_lr_ratio"],
+                                 CONFIG["max_lr_ratio"])
     loss_fn = nn.CrossEntropyLoss()
     
     step = 0
@@ -144,7 +152,14 @@ def train():
             
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
-            print(f"Step {step-1}/{CONFIG['total_steps']}: Loss={loss.item():.6f}, LR={current_lr:.8f}, Grad_norm={grad_norm:.4f}, TPS={tokens_per_sec:.2f}, Time={1000*elapsed_time:2f}ms")
+            print(
+                f"Step {step-1}/{CONFIG['total_steps']}: "
+                f"Loss={loss.item():.6f}, "
+                f"LR={current_lr:.8f}, "
+                f"Grad_norm={grad_norm:.4f}, "
+                f"TPS={tokens_per_sec:.2f}, "
+                f"Time={1000 * elapsed_time:.2f}ms"
+            )
             start_time = time.time()
             tokens_processed = 0
         
