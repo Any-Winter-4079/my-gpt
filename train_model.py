@@ -142,7 +142,6 @@ def train():
         
         step += 1
         tokens_processed += batch.numel()
-        print(CONFIG['batch_size']*CONFIG['max_seq_len'], tokens_processed)
         
         if step % 1 == 0:
             if device.type == "cuda":
