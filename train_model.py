@@ -2,6 +2,7 @@ import os
 import time
 import math
 import torch
+import tiktoken
 import numpy as np
 import torch.nn as nn
 from models.gpt import GPT
@@ -83,6 +84,8 @@ def get_optimizer(model, lr, betas):
 # Initialize model
 def train():
     device = CONFIG["device"]
+
+    tokenizer = tiktoken.get_encoding("gpt2")
     
     if device.type == "cuda":
         torch.set_float32_matmul_precision('high')
@@ -122,9 +125,13 @@ def train():
         optimizer.zero_grad()
         
         batch = batch.to(device)
-        print("Batch first tokens preview:")
+        # Print first 10 tokens and decoded text from the first 1–3 samples
+        print("Batch first tokens preview + decoded:")
         for i in range(min(3, batch.shape[0])):
-            print(f"  Sample {i}: {batch[i][:10].tolist()}")
+            token_list = batch[i][:20].tolist()
+            decoded = tokenizer.decode(token_list)
+            print(f"  Sample {i} tokens: {token_list}")
+            print(f"  Sample {i} text  : {decoded!r}")
 
         input_ids = batch[:, :-1]
         target_ids = batch[:, 1:]
