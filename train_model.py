@@ -152,7 +152,7 @@ def train():
             elapsed_time = time.time() - start_time
             tokens_per_sec = tokens_processed / elapsed_time
             print(
-                f"Step {step-1}/{CONFIG['total_steps']}: "
+                f"Step {step}/{CONFIG['total_steps']}: "
                 f"Loss={loss.item():.6f}, "
                 f"LR={current_lr:.8f}, "
                 f"Grad_norm={grad_norm:.4f}, "
