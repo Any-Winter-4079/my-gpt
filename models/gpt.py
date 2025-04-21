@@ -1,3 +1,4 @@
+import math
 import torch
 import torch.nn as nn
 from models.decoder_block import Block
@@ -6,7 +7,11 @@ class GPT(nn.Module):
     """
     Full GPT-style language model.
     - Token & positional embeddings
-    - Stacked Decoder blocks
+    - Stacked Decoder blocks with:
+        - Multi-Head Self-Attention with causal masking
+        - Feedforward MLP with up projection
+        - LayerNorm before each sublayer
+        - Residual connections
     - Final LayerNorm
     - Language modeling head (optionally tied with token embeddings)
     """
@@ -16,8 +21,8 @@ class GPT(nn.Module):
         self.embed_dim = embed_dim
         
         # Token & Positional Embeddings
-        self.wte = nn.Embedding(vocab_size, embed_dim)  # Token embeddings
-        self.wpe = nn.Embedding(max_seq_len, embed_dim)  # Positional embeddings
+        self.wte = nn.Embedding(vocab_size, embed_dim)
+        self.wpe = nn.Embedding(max_seq_len, embed_dim)
         
         # Decoder Blocks
         self.blocks = nn.ModuleList([
@@ -36,11 +41,10 @@ class GPT(nn.Module):
         
         # Initialize weights
         self.apply(self._init_weights)
-    
+
     def _init_weights(self, module):
-        """Apply proper weight initialization"""
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            std = 0.02
+            std = 1.0 / math.sqrt(self.embed_dim)
             if isinstance(module, nn.Linear) and hasattr(module, 'RESIDUAL_SCALE_INIT'):
                 std *= (2 * len(self.blocks)) ** -0.5
             nn.init.normal_(module.weight, mean=0.0, std=std)
@@ -48,7 +52,6 @@ class GPT(nn.Module):
             nn.init.zeros_(module.bias)
     
     def forward(self, input_ids):
-        """Run input tokens through the model"""
         batch_size, seq_len = input_ids.shape
         
         # Get embeddings

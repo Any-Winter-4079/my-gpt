@@ -6,6 +6,9 @@ import multiprocessing as mp
 from functools import partial
 from datasets import load_dataset
 
+eot_token = 50256 # EOT token for GPT-2
+num_proc_load_dataset = 8 # num workers
+
 def load_tokenizer():
     """Load GPT-2 tokenizer using tiktoken"""
     try:
@@ -72,13 +75,10 @@ def prepare_webtext_data_mp(data_dir="./data", shard_size=100_000_000, num_worke
     
     print(f"Using {num_workers} worker processes for tokenization with batch size {batch_size}")
     
-    # EOT token for GPT-2
-    eot_token = 50256
-    
     # Download the dataset
     print("Loading OpenWebText dataset...")
     try:
-        webtext = load_dataset("openwebtext", split="train", trust_remote_code=True)
+        webtext = load_dataset("openwebtext", split="train", trust_remote_code=True, num_proc=num_proc_load_dataset)
         print(f"Successfully loaded OpenWebText with {len(webtext)} documents")
     except Exception as e:
         raise RuntimeError(f"Error loading OpenWebText: {e}")

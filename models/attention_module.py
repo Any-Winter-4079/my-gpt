@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Attention(nn.Module):
+class CausalSelfAttention(nn.Module):
     """
     Multi-Head Self-Attention module with causal masking.
     """
@@ -25,7 +25,6 @@ class Attention(nn.Module):
         self.dropout = dropout
     
     def forward(self, x):
-        """Compute self-attention over input sequence x using F.scaled_dot_product_attention"""
         batch_size, seq_len, embed_dim = x.shape
         assert embed_dim == self.embed_dim, "Input embedding dim does not match model"
         
