@@ -135,12 +135,13 @@ def train():
         
         batch = batch.to(device)
         # Print first 10 tokens and decoded text from the first 1–3 samples
-        print("Batch first tokens preview + decoded:")
-        for i in range(min(3, batch.shape[0])):
-            token_list = batch[i][:20].tolist()
-            decoded = tokenizer.decode(token_list)
-            print(f"  Sample {i} tokens: {token_list}")
-            print(f"  Sample {i} text  : {decoded!r}")
+        if False:
+            print("Batch first tokens preview + decoded:")
+            for i in range(min(3, batch.shape[0])):
+                token_list = batch[i][:20].tolist()
+                decoded = tokenizer.decode(token_list)
+                print(f"  Sample {i} tokens: {token_list}")
+                print(f"  Sample {i} text  : {decoded!r}")
 
         input_ids = batch[:, :-1]
         target_ids = batch[:, 1:]
