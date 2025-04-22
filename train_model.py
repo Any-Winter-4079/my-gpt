@@ -35,17 +35,27 @@ CONFIG = {
 # Iterable Dataset for streaming from disk
 class NPZIterableDataset(IterableDataset):
     def __init__(self, data_dir, batch_size, seq_len):
-        self.files = sorted([os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith(".npy")])
+        self.files = sorted([
+            os.path.join(data_dir, f)
+            for f in os.listdir(data_dir)
+            if f.endswith(".npy")
+        ])
         self.batch_size = batch_size
         self.seq_len = seq_len
-    
+
     def __iter__(self):
         for file in self.files:
-            tokens = np.load(file).astype(np.int64)
-            num_samples = len(tokens) - self.seq_len
-            for i in range(0, num_samples, self.batch_size):
-                batch = np.array([tokens[j : j + self.seq_len] for j in range(i, min(i + self.batch_size, num_samples))], dtype=np.int64)
+            tokens = np.load(file)
+            total_len = len(tokens)
+            chunk_len = self.seq_len * self.batch_size
+
+            for i in range(0, total_len - chunk_len + 1, chunk_len):
+                chunk = tokens[i : i + chunk_len]
+
+                batch = chunk.reshape(self.batch_size, self.seq_len)
+
                 yield torch.tensor(batch, dtype=torch.long)
+
 
 # Load dataset from preprocessed .npy shards
 def load_data_from_disk(data_dir, batch_size, seq_len):
