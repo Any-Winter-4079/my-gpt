@@ -32,7 +32,6 @@ CONFIG = {
     "grad_clip": 1.0,
 }
 
-# Iterable Dataset for streaming from disk
 class NPZIterableDataset(IterableDataset):
     def __init__(self, data_dir, batch_size, seq_len):
         self.files = sorted([
@@ -45,17 +44,17 @@ class NPZIterableDataset(IterableDataset):
 
     def __iter__(self):
         for file in self.files:
-            tokens = np.load(file)
+            # Load as uint16 and convert to int32 for PyTorch compatibility
+            tokens = np.load(file).astype(np.int32)
             total_len = len(tokens)
             chunk_len = self.seq_len * self.batch_size
 
             for i in range(0, total_len - chunk_len + 1, chunk_len):
                 chunk = tokens[i : i + chunk_len]
-
                 batch = chunk.reshape(self.batch_size, self.seq_len)
 
+                # Cast to torch.long (int64)
                 yield torch.tensor(batch, dtype=torch.long)
-
 
 # Load dataset from preprocessed .npy shards
 def load_data_from_disk(data_dir, batch_size, seq_len):
